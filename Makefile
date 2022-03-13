@@ -1,10 +1,21 @@
-.PHONY: build
-.DEFAULT_GOAL := build
+app             := dist/index.js
+dockerfile      := Dockerfile
+tag             := $$(basename $$(pwd))
+image_timestamp := .docker-build-timestamps/$(dockerfile)
 
-build: node_modules dist/index.js
+.PHONY: app image
+.DEFAULT_GOAL := app
 
-dist/index.js: src/index.ts package.json
-	tsc --build tsconfig.json && chmod +x dist/index.js
+app: node_modules $(app)
+image: $(image_timestamp)
 
 node_modules: package.json
 	npm i && touch node_modules
+
+$(app): src/index.ts package.json
+	tsc --build tsconfig.json && chmod +x dist/index.js
+
+$(image_timestamp): $(app) $(dockerfile)
+	docker build . -f $(dockerfile) -t $(tag) --no-cache
+	mkdir -p .docker-build-timestamps
+	touch .docker-build-timestamps/$(dockerfile)
