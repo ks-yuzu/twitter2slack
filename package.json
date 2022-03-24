@@ -1,5 +1,5 @@
 {
-  "name": "twitter2slack",
+  "name": "twitter2discord",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -9,14 +9,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@slack/webhook": "^6.0.0",
-    "async-retry": "^1.3.3",
     "crypto": "^1.0.1",
     "dayjs": "^1.10.6",
+    "discord-notification": "github:ks-yuzu/discord-notification",
+    "discord.js": "^13.6.0",
     "oauth-1.0a": "^2.2.6",
     "twitter-v2": "^1.1.0"
-  },
-  "devDependencies": {
-    "@types/async-retry": "^1.4.3"
   }
 }
