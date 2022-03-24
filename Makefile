@@ -7,7 +7,7 @@ image_timestamp := .docker-build-timestamps/$(dockerfile)
 .DEFAULT_GOAL := app
 
 app: node_modules $(app)
-image: $(image_timestamp)
+image: app $(image_timestamp)
 
 node_modules: package.json
 	npm i && touch node_modules
