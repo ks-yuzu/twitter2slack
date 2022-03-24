@@ -1,8 +1,5 @@
 import TwitterV2 from 'twitter-v2'
-// import axios from 'axios'
-// import axiosRetry from 'axios-retry'
 import {IncomingWebhook as SlackIncomingWebhook} from '@slack/webhook'
-import DiscordNotification from 'discord-notification'
 import retry from 'async-retry'
 import dayjs from 'dayjs'
 import dayjsPluginUtc from 'dayjs/plugin/utc'
@@ -11,7 +8,6 @@ dayjs.extend(dayjsPluginUtc)
 
 // CONF
 const SLACK_WEBHOOK     = getEnvOrDie('SLACK_WEBHOOK')
-const DISCORD_BOT_TOKEN = getEnvOrDie('DISCORD_BOT_TOKEN')
 const TWITTER_CREDENTIAL = {
   consumer_key:        getEnvOrDie('TWITTER_CONSUMER_KEY'),
   consumer_secret:     getEnvOrDie('TWITTER_CONSUMER_SECRET'),
@@ -21,7 +17,6 @@ const TWITTER_CREDENTIAL = {
 
 
 const slack = new SlackIncomingWebhook(SLACK_WEBHOOK)
-const discord = new DiscordNotification({botToken: DISCORD_BOT_TOKEN})
 
 
 function die(msg: string): never {
@@ -62,8 +57,7 @@ async function postSlack({channel, username, text, iconUrl}:
   const args = process.argv.slice(2)
   const twitterId      = args.shift() || getEnvOrDie('TWITTER_USER')
   const slackChannel   = args.shift() || getEnv('SLACK_CHANNEL')   || '#bot-twitter'
-  const discordChannel = args.shift() || getEnv('DISCORD_CHANNEL') || slackChannel
-  console.log({twitterId, slackChannel, discordChannel})
+  console.log({twitterId, slackChannel})
 
   const twitter = new TwitterV2(TWITTER_CREDENTIAL)
 
@@ -92,8 +86,6 @@ async function postSlack({channel, username, text, iconUrl}:
     return
   }
 
-  await discord.init()
-
   for (const tweet of tweets.data.reverse()) {
     const {id, text, attachments, created_at: timestamp} = tweet
     console.log({id, text, attachments, timestamp})
@@ -102,33 +94,11 @@ async function postSlack({channel, username, text, iconUrl}:
     const iconUrl  = tweets.includes.users?.find((i: any) => i.id === tweet.author_id)?.profile_image_url
     console.log({username, iconUrl})
 
-    // if (attachments?.media_keys) {
-    //   for (const mediaKey of attachments?.media_keys) {
-    //     const media = tweets.includes.media?.find((i: any) => i.media_key === mediaKey)
-    //     if (media == null) { continue }
-
-    //     const {type, url} = media
-    //     switch (type) {
-    //       case 'photo': {
-    //         const data = await axios.get(url, {responseType: 'arraybuffer'})
-    //         break
-    //       }
-    //     }
-    //   }
-    // }
-    const attachmentUrls = (attachments?.media_keys || []).map((mediaKey: string) => {
-      return tweets.includes.media?.find((i: any) => i.media_key === mediaKey)?.url
-    })
+    const attachmentUrls = (attachments?.media_keys || [])
+      .map((mediaKey: string) => tweets.includes.media?.find((i: any) => i.media_key === mediaKey)?.url)
+      .filter((i: string | undefined) => i != null)
     console.log({attachmentUrls})
 
-
-    await discord.post({
-      channel: discordChannel,
-      username,
-      iconUrl,
-      text: `https://twitter.com/${twitterId}/status/${id}\n` + text,
-      files: attachmentUrls,
-    })
     await postSlack({
       channel: slackChannel,
       username,
@@ -138,6 +108,4 @@ async function postSlack({channel, username, text, iconUrl}:
 
     await new Promise(r => setTimeout(r, 2000)) // sleep
   }
-
-  await discord.destroy()
 })()
